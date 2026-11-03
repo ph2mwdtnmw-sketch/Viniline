@@ -9,7 +9,17 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.FilterChip
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -35,6 +45,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.media3.common.util.UnstableApi
 import com.savoo.scclient.R
+import com.savoo.scclient.player.EqBands
 import com.savoo.scclient.player.PlayerController
 import com.savoo.scclient.player.SoundMode
 import com.savoo.scclient.player.SoundPreset
@@ -155,7 +166,129 @@ fun SoundModeContent(
                 )
             }
         }
+        Spacer(Modifier.height(8.dp))
+        SoundSlider(
+            label = stringResource(R.string.sound_noise),
+            valueText = if (mode.noise <= 0f) {
+                stringResource(R.string.sound_noise_off)
+            } else {
+                stringResource(R.string.sound_percent_format, (mode.noise * 100).roundToInt())
+            },
+            value = mode.noise,
+            range = 0f..1f,
+            steps = 19,
+            onChange = { controller.setSoundMode(mode.copy(noise = snap(it, LEVEL_STEP))) },
+            onChangeFinished = haptic,
+        )
+        Spacer(Modifier.height(4.dp))
+        EqualizerSection(
+            gains = mode.eq,
+            onChange = { controller.setSoundMode(mode.copy(eq = it)) },
+            onChangeFinished = haptic,
+        )
         Spacer(Modifier.height(20.dp))
+    }
+}
+
+private data class EqPresetItem(@StringRes val label: Int, val gains: List<Float>)
+
+private val EQ_PRESETS = listOf(
+    EqPresetItem(R.string.sound_eq_flat, listOf(0f, 0f, 0f, 0f, 0f)),
+    EqPresetItem(R.string.sound_eq_warm, listOf(3f, 2f, 0f, -1.5f, -3f)),
+    EqPresetItem(R.string.sound_eq_bass, listOf(6f, 4f, 0f, 0f, 0f)),
+    EqPresetItem(R.string.sound_eq_vocal, listOf(-2f, 0f, 3f, 3f, 1f)),
+    EqPresetItem(R.string.sound_eq_bright, listOf(0f, 0f, 0f, 3f, 5f)),
+)
+
+private val EQ_LABELS = listOf("60 Hz", "230 Hz", "910 Hz", "3.6 kHz", "14 kHz")
+
+@Composable
+private fun EqualizerSection(
+    gains: List<Float>,
+    onChange: (List<Float>) -> Unit,
+    onChangeFinished: () -> Unit,
+) {
+    var open by remember { mutableStateOf(false) }
+    val isFlat = gains.all { it == 0f }
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { open = !open }
+            .padding(vertical = 8.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            stringResource(R.string.sound_eq),
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+        )
+        Text(
+            if (isFlat) stringResource(R.string.sound_eq_flat) else stringResource(R.string.sound_eq_on),
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.primary,
+            fontWeight = FontWeight.SemiBold,
+        )
+    }
+    AnimatedVisibility(
+        visible = open,
+        enter = fadeIn() + expandVertically(),
+        exit = fadeOut() + shrinkVertically(),
+    ) {
+        Column {
+            Row(
+                modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                EQ_PRESETS.forEach { preset ->
+                    FilterChip(
+                        selected = gains == preset.gains,
+                        onClick = {
+                            onChange(preset.gains)
+                            onChangeFinished()
+                        },
+                        label = { Text(stringResource(preset.label)) },
+                    )
+                }
+            }
+            Column(
+                modifier = Modifier
+                    .heightIn(max = 280.dp)
+                    .verticalScroll(rememberScrollState()),
+            ) {
+                for (band in 0 until EqBands.COUNT) {
+                    val value = gains.getOrElse(band) { 0f }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            EQ_LABELS[band],
+                            style = MaterialTheme.typography.labelMedium,
+                            modifier = Modifier.width(56.dp),
+                        )
+                        Slider(
+                            value = value,
+                            onValueChange = { raw ->
+                                val snapped = raw.roundToInt().toFloat()
+                                if (snapped != value) {
+                                    onChange(gains.toMutableList().also { it[band] = snapped })
+                                }
+                            },
+                            onValueChangeFinished = onChangeFinished,
+                            valueRange = -EqBands.MAX_DB..EqBands.MAX_DB,
+                            modifier = Modifier.weight(1f),
+                        )
+                        Text(
+                            (if (value > 0f) "+" else "") + value.roundToInt() + " dB",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.width(52.dp),
+                        )
+                    }
+                }
+            }
+        }
     }
 }
 

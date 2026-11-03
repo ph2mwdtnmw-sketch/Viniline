@@ -193,6 +193,7 @@ class PlayerController @Inject constructor(
     private val minListenMsToRecord = 5_000L
 
     companion object {
+        const val MAX_SCRATCH_SPEED = 4f
         const val MIN_PLAYBACK_SPEED = 0.5f
         const val MAX_PLAYBACK_SPEED = 2f
         val PLAYBACK_SPEED_STEPS = listOf(0.5f, 0.75f, 1f, 1.25f, 1.5f, 1.75f, 2f)
@@ -760,6 +761,8 @@ class PlayerController @Inject constructor(
     }
 
     private fun beginListenSegment(track: Track) {
+        // A new record: drop the needle (crackle burst on the vinyl noise).
+        soundEffects.triggerNeedleDrop()
         flushListenSegment()
         listenTrackId = track.id
         listenTrackDurationMs = track.durationMs
@@ -1228,6 +1231,8 @@ class PlayerController @Inject constructor(
             customRate = mode.customRate.coerceIn(SoundMode.MIN_RATE, SoundMode.MAX_RATE),
             customReverb = mode.customReverb.coerceIn(0f, 1f),
             customBass = mode.customBass.coerceIn(0f, 1f),
+            eq = mode.eq.normalizedEq(),
+            noise = mode.noise.coerceIn(0f, 1f),
         )
         _state.update { it.copy(soundMode = clamped) }
         applyPlaybackParameters()
@@ -1236,6 +1241,8 @@ class PlayerController @Inject constructor(
             .putFloat("sound_custom_rate", clamped.customRate)
             .putFloat("sound_custom_reverb", clamped.customReverb)
             .putFloat("sound_custom_bass", clamped.customBass)
+            .putString("sound_eq", clamped.eq.joinToString(","))
+            .putFloat("sound_noise", clamped.noise)
             .apply()
     }
 
@@ -1246,6 +1253,12 @@ class PlayerController @Inject constructor(
         customRate = prefs.getFloat("sound_custom_rate", 1f).coerceIn(SoundMode.MIN_RATE, SoundMode.MAX_RATE),
         customReverb = prefs.getFloat("sound_custom_reverb", 0f).coerceIn(0f, 1f),
         customBass = prefs.getFloat("sound_custom_bass", 0f).coerceIn(0f, 1f),
+        eq = prefs.getString("sound_eq", null)
+            ?.split(",")
+            ?.mapNotNull { it.toFloatOrNull() }
+            .orEmpty()
+            .normalizedEq(),
+        noise = prefs.getFloat("sound_noise", SoundMode.DEFAULT_NOISE).coerceIn(0f, 1f),
     )
 
     private fun applyPlaybackParameters() {
@@ -1253,6 +1266,8 @@ class PlayerController @Inject constructor(
         val mode = current.soundMode
         soundEffects.reverb = mode.reverb
         soundEffects.bass = mode.bass
+        soundEffects.eq = mode.eq.toFloatArray()
+        soundEffects.noise = mode.noise
         soundEffects.outputRate = current.playbackSpeed * mode.rate
         controller?.playbackParameters = androidx.media3.common.PlaybackParameters(
             current.playbackSpeed * mode.rate,
@@ -1370,6 +1385,26 @@ class PlayerController @Inject constructor(
 
     fun seekTo(positionMs: Long) {
         controller?.seekTo(positionMs)
+    }
+
+    // --- "Hand on the record" ---------------------------------------------------------------
+    // While the finger is on a playing record, the normal audio is replaced by the last seconds of
+    // the track played at the finger's speed and direction (see ScratchEngine). Speed 1 is the
+    // normal 33 1/3 rpm forward speed, negative is backwards.
+
+    fun beginScratch() {
+        soundEffects.scratchSpeed = 1f
+        soundEffects.scratchStampNanos = System.nanoTime()
+        soundEffects.scratchActive = true
+    }
+
+    fun scratchSpeed(speed: Float) {
+        soundEffects.scratchSpeed = speed.coerceIn(-MAX_SCRATCH_SPEED, MAX_SCRATCH_SPEED)
+        soundEffects.scratchStampNanos = System.nanoTime()
+    }
+
+    fun endScratch() {
+        soundEffects.scratchActive = false
     }
 
     fun beginScrub() {

@@ -1260,24 +1260,43 @@ private fun PixelPlayerContent(
                             .padding(bottom = if (compact) 4.dp else 12.dp),
                     ) {
                         val artSize = ((minOf(maxWidth, maxHeight) - 20.dp) * artworkScale).coerceAtLeast(0.dp)
-                        PixelArtwork(
-                            artworkUrl = state.currentTrack?.artworkUrl,
-                            artworkSeed = state.currentTrack?.title,
-                            progress = if (state.durationMs > 0) {
-                                ((if (isDragging) dragPosition else state.positionMs.toFloat()) / state.durationMs.toFloat()).coerceIn(0f, 1f)
-                            } else 0f,
-                            palette = palette,
-                            slideOffsetX = slideOffset,
-                            glowColor = glowColor,
-                            showGlow = showGlow,
-                            artworkShape = artworkShape,
-                            artworkRingEnabled = artworkRingEnabled,
-                            isPlaying = state.isPlaying,
-                            pulse = pulse,
-                            modifier = Modifier
-                                .requiredSize(artSize)
-                                .align(Alignment.BottomCenter),
-                        )
+                        if (VINYL_PLAYER_ENABLED) {
+                            VinylTurntable(
+                                artworkUrl = state.currentTrack?.artworkUrl,
+                                artworkSeed = state.currentTrack?.title,
+                                isPlaying = state.isPlaying,
+                                rate = state.playbackSpeed * state.soundMode.rate,
+                                positionMs = state.positionMs,
+                                durationMs = state.durationMs,
+                                onSeek = { controller.seekTo(it) },
+                                onScratchStart = { controller.beginScratch() },
+                                onScratchSpeed = { controller.scratchSpeed(it) },
+                                onScratchEnd = { controller.endScratch() },
+                                modifier = Modifier
+                                    .requiredSize(artSize)
+                                    .align(Alignment.BottomCenter)
+                                    .offset { IntOffset(slideOffset.value.roundToInt(), 0) },
+                            )
+                        } else {
+                            PixelArtwork(
+                                artworkUrl = state.currentTrack?.artworkUrl,
+                                artworkSeed = state.currentTrack?.title,
+                                progress = if (state.durationMs > 0) {
+                                    ((if (isDragging) dragPosition else state.positionMs.toFloat()) / state.durationMs.toFloat()).coerceIn(0f, 1f)
+                                } else 0f,
+                                palette = palette,
+                                slideOffsetX = slideOffset,
+                                glowColor = glowColor,
+                                showGlow = showGlow,
+                                artworkShape = artworkShape,
+                                artworkRingEnabled = artworkRingEnabled,
+                                isPlaying = state.isPlaying,
+                                pulse = pulse,
+                                modifier = Modifier
+                                    .requiredSize(artSize)
+                                    .align(Alignment.BottomCenter),
+                            )
+                        }
                     }
 
                     Spacer(Modifier.height(if (compact) 4.dp else 16.dp))
@@ -1814,6 +1833,9 @@ private fun PixelPlayerContent(
 }
 
 private const val ORB_PULSE = 0.12f
+
+// Set to false to go back to the original flat cover art in the full-screen player.
+private const val VINYL_PLAYER_ENABLED = true
 
 private enum class PixelPanel { QUEUE, SLEEP_TIMER, SPEED, SOUND, LOOP }
 
@@ -2828,23 +2850,42 @@ private fun ClassicPlayerContent(
                             .padding(bottom = if (compact) 4.dp else 20.dp),
                     ) {
                         val artSize = (minOf(maxWidth * 0.92f, maxHeight) * artworkScale).coerceAtLeast(0.dp)
-                        ArtworkOrb(
-                            artworkUrl = state.currentTrack?.artworkUrl,
-                            artworkSeed = state.currentTrack?.title,
-                            glowColor = glowColor,
-                            isPlaying = state.isPlaying,
-                            progress = if (state.durationMs > 0) {
-                                ((if (isDragging) dragPosition else state.positionMs.toFloat()) / state.durationMs.toFloat()).coerceIn(0f, 1f)
-                            } else 0f,
-                            slideOffsetX = slideOffset,
-                            style = backgroundStyle,
-                            artworkShape = artworkShape,
-                            artworkRingEnabled = artworkRingEnabled,
-                            pulse = pulse,
-                            modifier = Modifier
-                                .requiredSize(artSize)
-                                .align(Alignment.BottomCenter),
-                        )
+                        if (VINYL_PLAYER_ENABLED) {
+                            VinylTurntable(
+                                artworkUrl = state.currentTrack?.artworkUrl,
+                                artworkSeed = state.currentTrack?.title,
+                                isPlaying = state.isPlaying,
+                                rate = state.playbackSpeed * state.soundMode.rate,
+                                positionMs = state.positionMs,
+                                durationMs = state.durationMs,
+                                onSeek = { controller.seekTo(it) },
+                                onScratchStart = { controller.beginScratch() },
+                                onScratchSpeed = { controller.scratchSpeed(it) },
+                                onScratchEnd = { controller.endScratch() },
+                                modifier = Modifier
+                                    .requiredSize(artSize)
+                                    .align(Alignment.BottomCenter)
+                                    .offset { IntOffset(slideOffset.value.roundToInt(), 0) },
+                            )
+                        } else {
+                            ArtworkOrb(
+                                artworkUrl = state.currentTrack?.artworkUrl,
+                                artworkSeed = state.currentTrack?.title,
+                                glowColor = glowColor,
+                                isPlaying = state.isPlaying,
+                                progress = if (state.durationMs > 0) {
+                                    ((if (isDragging) dragPosition else state.positionMs.toFloat()) / state.durationMs.toFloat()).coerceIn(0f, 1f)
+                                } else 0f,
+                                slideOffsetX = slideOffset,
+                                style = backgroundStyle,
+                                artworkShape = artworkShape,
+                                artworkRingEnabled = artworkRingEnabled,
+                                pulse = pulse,
+                                modifier = Modifier
+                                    .requiredSize(artSize)
+                                    .align(Alignment.BottomCenter),
+                            )
+                        }
                     }
 
                     Spacer(Modifier.height(if (compact) 4.dp else 16.dp))

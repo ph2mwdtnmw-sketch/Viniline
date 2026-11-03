@@ -909,6 +909,15 @@
     <string name="sound_rate">Tempo and pitch</string>
     <string name="sound_reverb">Reverb</string>
     <string name="sound_bass">Bass</string>
+    <string name="sound_noise">Vinyl crackle</string>
+    <string name="sound_noise_off">Off</string>
+    <string name="sound_eq">Equalizer</string>
+    <string name="sound_eq_on">On</string>
+    <string name="sound_eq_flat">Flat</string>
+    <string name="sound_eq_warm">Warm vinyl</string>
+    <string name="sound_eq_bass">Bass</string>
+    <string name="sound_eq_vocal">Vocal</string>
+    <string name="sound_eq_bright">Bright</string>
     <string name="sound_percent_format">%d%%</string>
     <string name="settings_beat_pulse">Pulse to the beat</string>
     <string name="settings_beat_pulse_desc">The glow behind the artwork reacts to the bass of the track</string>

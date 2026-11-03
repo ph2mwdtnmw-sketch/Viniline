@@ -933,6 +933,15 @@
     <string name="sound_rate">Темп и тон</string>
     <string name="sound_reverb">Реверберация</string>
     <string name="sound_bass">Басы</string>
+    <string name="sound_noise">Шум винила</string>
+    <string name="sound_noise_off">Выкл</string>
+    <string name="sound_eq">Эквалайзер</string>
+    <string name="sound_eq_on">Вкл</string>
+    <string name="sound_eq_flat">Плоский</string>
+    <string name="sound_eq_warm">Тёплый винил</string>
+    <string name="sound_eq_bass">Басы</string>
+    <string name="sound_eq_vocal">Вокал</string>
+    <string name="sound_eq_bright">Яркий</string>
     <string name="sound_percent_format">%d%%</string>
     <string name="settings_beat_pulse">Пульсация в такт</string>
     <string name="settings_beat_pulse_desc">Свечение за обложкой реагирует на басы трека</string>
